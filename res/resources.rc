@@ -1,0 +1,5 @@
+#include "resource.h"
+#include <windows.h>
+
+IDR_WAV_MUTE    RCDATA "mute.wav"
+IDR_WAV_UNMUTE  RCDATA "unmute.wav"
