@@ -4,7 +4,7 @@ project(mic_toggle LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(mic_toggle
+add_executable(mic_toggle WIN32
   src/main.cpp
   src/audio_endpoint.cpp
   src/wav_resource.cpp
