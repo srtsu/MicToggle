@@ -27,9 +27,18 @@ Designed to be:
 ### Windows (MSVC)
 
 ~~~powershell
-cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake -S . -B build -A x64
 cmake --build build --config Release
 ~~~
+
+To embed a specific version into the EXE properties:
+
+~~~powershell
+cmake -S . -B build -A x64 -DMIC_TOGGLE_VERSION=1.2.3
+cmake --build build --config Release
+~~~
+
+GitHub Actions sets this value automatically from release tags such as `v1.2.3`.
 
 ### macOS → Windows cross-build (mingw-w64)
 

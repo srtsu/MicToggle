@@ -4,11 +4,38 @@ project(mic_toggle LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(MIC_TOGGLE_VERSION "0.0.0-dev" CACHE STRING
+    "Version embedded into the Windows executable")
+string(REGEX REPLACE "^v" "" MIC_TOGGLE_VERSION_NORMALIZED
+       "${MIC_TOGGLE_VERSION}")
+
+if(NOT MIC_TOGGLE_VERSION_NORMALIZED MATCHES
+   "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\.([0-9]+))?([+-][0-9A-Za-z.-]+)?$")
+  message(FATAL_ERROR
+    "MIC_TOGGLE_VERSION must be a version such as 1.2.3 or 1.2.3-beta.1")
+endif()
+
+set(MIC_TOGGLE_VERSION_MAJOR "${CMAKE_MATCH_1}")
+set(MIC_TOGGLE_VERSION_MINOR "${CMAKE_MATCH_2}")
+set(MIC_TOGGLE_VERSION_PATCH "${CMAKE_MATCH_3}")
+if(CMAKE_MATCH_5)
+  set(MIC_TOGGLE_VERSION_BUILD "${CMAKE_MATCH_5}")
+else()
+  set(MIC_TOGGLE_VERSION_BUILD 0)
+endif()
+
+configure_file(
+  res/version.rc.in
+  "${CMAKE_CURRENT_BINARY_DIR}/version.rc"
+  @ONLY
+)
+
 add_executable(mic_toggle WIN32
   src/main.cpp
   src/audio_endpoint.cpp
   src/wav_resource.cpp
   res/resources.rc
+  "${CMAKE_CURRENT_BINARY_DIR}/version.rc"
 )
 
 target_include_directories(mic_toggle PRIVATE src res)
@@ -31,12 +58,6 @@ if(MINGW)
 endif()
 
 if(MSVC)
-  # Keep the release artifact self-contained and let the linker discard the
-  # unused parts of the static runtime.
-  set_property(TARGET mic_toggle PROPERTY
-    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
-  )
-
   target_compile_options(mic_toggle PRIVATE
     $<$<CONFIG:Release>:/O1 /Oi /GL /Gy /Gw /GF /GR- /EHs-c- /Zc:inline /DNDEBUG>
     $<$<CONFIG:RelWithDebInfo>:/O2 /Oi /GL>
