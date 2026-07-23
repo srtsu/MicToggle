@@ -2,7 +2,9 @@
 #include "resource.h"
 #include <mmsystem.h>
 
+#ifdef _MSC_VER
 #pragma comment(lib, "winmm.lib")
+#endif
 
 static const BYTE* LoadWavResource(HINSTANCE hInst, int id)
 {
@@ -15,14 +17,14 @@ static const BYTE* LoadWavResource(HINSTANCE hInst, int id)
     const DWORD size = SizeofResource(hInst, r);
     if (!size) return nullptr;
 
-    return (const BYTE*)LockResource(hg);
+    return static_cast<const BYTE*>(LockResource(hg));
 }
 
 static void PlayWavMemAsync(const BYTE* mem)
 {
     if (!mem) return;
-    PlaySoundW(nullptr, nullptr, 0);
-    PlaySoundW((LPCWSTR)mem, nullptr, SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
+    PlaySoundW(reinterpret_cast<LPCWSTR>(mem), nullptr,
+               SND_MEMORY | SND_ASYNC | SND_NODEFAULT);
 }
 
 bool ResourceSounds::Init(HINSTANCE hInst)

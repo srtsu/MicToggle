@@ -16,16 +16,28 @@ static const UINT WM_HOTKEY_ACTION = WM_APP + 1;
 static DWORD g_mainThreadId = 0;
 static HHOOK g_hook = nullptr;
 static volatile LONG g_actionPending = 0;
+static volatile LONG g_hookKeyDown = 0;
 
 static LRESULT CALLBACK LowLevelKeyboardProc(int code, WPARAM wParam, LPARAM lParam)
 {
-    if (code >= 0 && (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN))
+    if (code >= 0)
     {
-        const KBDLLHOOKSTRUCT* kb = (const KBDLLHOOKSTRUCT*)lParam;
+        const auto* kb = reinterpret_cast<const KBDLLHOOKSTRUCT*>(lParam);
         if (kb->vkCode == kHotkeyVk)
         {
-            if (InterlockedExchange(&g_actionPending, 1) == 0)
-                PostThreadMessageW(g_mainThreadId, WM_HOTKEY_ACTION, 0, 0);
+            if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+            {
+                InterlockedExchange(&g_hookKeyDown, 0);
+                return 1;
+            }
+
+            if ((wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) &&
+                InterlockedExchange(&g_hookKeyDown, 1) == 0 &&
+                InterlockedExchange(&g_actionPending, 1) == 0)
+            {
+                if (!PostThreadMessageW(g_mainThreadId, WM_HOTKEY_ACTION, 0, 0))
+                    InterlockedExchange(&g_actionPending, 0);
+            }
             return 1;
         }
     }
@@ -58,7 +70,7 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, PWSTR, int)
     if (!hotkeyOk)
     {
         g_hook = SetWindowsHookExW(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInst, 0);
-        if (!g_hook) return (int)GetLastError();
+        if (!g_hook) return static_cast<int>(GetLastError());
     }
 
     MSG msg;

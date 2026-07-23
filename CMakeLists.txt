@@ -20,29 +20,42 @@ if(WIN32)
 endif()
 
 if(MINGW)
-  target_link_options(mic_toggle PRIVATE -mwindows -municode)
+  target_compile_options(mic_toggle PRIVATE
+    $<$<CONFIG:Release>:-ffunction-sections -fdata-sections>
+  )
+  target_link_options(mic_toggle PRIVATE
+    -mwindows
+    -municode
+    $<$<CONFIG:Release>:-Wl,--gc-sections -s>
+  )
 endif()
 
 if(MSVC)
+  # Keep the release artifact self-contained and let the linker discard the
+  # unused parts of the static runtime.
+  set_property(TARGET mic_toggle PROPERTY
+    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+  )
+
   target_compile_options(mic_toggle PRIVATE
-    $<$<CONFIG:Release>:/O2 /Oi /GL /DNDEBUG>
+    $<$<CONFIG:Release>:/O1 /Oi /GL /Gy /Gw /GF /GR- /EHs-c- /Zc:inline /DNDEBUG>
     $<$<CONFIG:RelWithDebInfo>:/O2 /Oi /GL>
   )
   target_link_options(mic_toggle PRIVATE
-    $<$<CONFIG:Release>:/LTCG /INCREMENTAL:NO>
+    $<$<CONFIG:Release>:/LTCG /INCREMENTAL:NO /OPT:REF /OPT:ICF /RELEASE>
     $<$<CONFIG:RelWithDebInfo>:/LTCG>
   )
 else()
   target_compile_options(mic_toggle PRIVATE
-    $<$<CONFIG:Release>:-O3 -DNDEBUG>
-    $<$<CONFIG:RelWithDebInfo>:-O3>
+    -fno-exceptions
+    -fno-rtti
+    $<$<CONFIG:Release>:-Os -DNDEBUG>
+    $<$<CONFIG:RelWithDebInfo>:-O2>
   )
-  
-  if(NOT (MINGW AND CMAKE_CROSSCOMPILING))
-    include(CheckIPOSupported)
-    check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
-    if(ipo_supported)
-      set_property(TARGET mic_toggle PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
-    endif()
+
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
+  if(ipo_supported)
+    set_property(TARGET mic_toggle PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
   endif()
 endif()

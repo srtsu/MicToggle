@@ -16,11 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure (Release)
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Configure (MSVC x64)
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 
-      - name: Build
-        run: cmake --build build --config Release
+      - name: Build (Release)
+        run: cmake --build build --config Release --parallel
 
       - name: Prepare artifacts
         shell: pwsh
